@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <title>Sklepik Mateusza</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; }
+        input, button { margin: 5px; }
+        table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+        th, td { border: 1px solid #ccc; padding: 8px; }
+    </style>
+</head>
+<body>
+<h1>Produkty</h1>
+
+<div>
+    <input type="text" id="name" placeholder="Nazwa">
+    <input type="text" id="description" placeholder="Opis">
+    <input type="number" id="price" placeholder="Cena">
+    <input type="number" id="stock" placeholder="Ilość">
+    <button onclick="addProduct()">Dodaj</button>
+</div>
+
+<table>
+    <thead>
+    <tr><th>ID</th><th>Nazwa</th><th>Opis</th><th>Cena</th><th>Ilość</th><th>Akcje</th></tr>
+    </thead>
+    <tbody id="tableBody"></tbody>
+</table>
+
+<script>
+    const API = '/api/products';
+
+    async function loadProducts() {
+        const res = await fetch(API);
+        const products = await res.json();
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = '';
+        products.forEach(p => {
+            tbody.innerHTML += `
+                    <tr>
+                        <td>${p.id}</td>
+                        <td>${p.name}</td>
+                        <td>${p.description}</td>
+                        <td>${p.price} PLN</td>
+                        <td>${p.stockQuantity}</td>
+                        <td><button onclick="deleteProduct(${p.id})">Usuń</button></td>
+                    </tr>`;
+        });
+    }
+
+    async function addProduct() {
+        const product = {
+            name: document.getElementById('name').value,
+            description: document.getElementById('description').value,
+            price: parseFloat(document.getElementById('price').value),
+            stockQuantity: parseInt(document.getElementById('stock').value)
+        };
+
+        await fetch(API, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(product)
+        });
+
+        loadProducts();
+    }
+
+    async function deleteProduct(id) {
+        await fetch(`${API}/${id}`, { method: 'DELETE' });
+        loadProducts();
+    }
+
+    loadProducts();
+</script>
+</body>
+</html>

@@ -1,6 +1,8 @@
+com\sklep\model\OrderItem.class
 Unknown\Main.class
-com\sklep\dao\UserDAO.class
-com\sklep\service\UserService.class
-com\sklep\web\LoginServlet.class
-com\sklep\dao\UserDAOImpl.class
+com\sklep\model\User$UserRole.class
+com\sklep\controller\ProductController.class
+com\sklep\model\Order.class
+com\sklep\model\Product.class
+com\sklep\model\Order$OrderStatus.class
 com\sklep\model\User.class
