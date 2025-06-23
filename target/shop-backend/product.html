@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Sklep - Dodaj produkt</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        input, textarea { display: block; margin-bottom: 10px; width: 300px; padding: 5px; }
+        button { padding: 7px 15px; }
+        ul { margin-top: 20px; }
+        li { margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+<h1>Dodaj produkt</h1>
+
+<form id="productForm">
+    <input type="text" id="name" placeholder="Nazwa" required maxlength="100" />
+    <textarea id="description" placeholder="Opis" required maxlength="1000"></textarea>
+    <input type="number" id="price" placeholder="Cena" required step="0.01" min="0" />
+    <input type="number" id="stockQuantity" placeholder="Ilosc w magazynie" required min="0" />
+    <button type="submit">Dodaj</button>
+</form>
+
+<h2>Produkty:</h2>
+<ul id="productList"></ul>
+
+<script>
+    const form = document.getElementById('productForm');
+    const productList = document.getElementById('productList');
+
+    async function loadProducts() {
+        productList.innerHTML = '';
+        try {
+            const res = await fetch('/shop-backend/api/products');
+            const products = await res.json();
+            products.forEach(p => {
+                const li = document.createElement('li');
+                li.textContent = `${p.name} - ${p.description} - Cena: ${p.price.toFixed(2)} - Magazyn: ${p.stockQuantity}`;
+                productList.appendChild(li);
+            });
+        } catch (e) {
+            console.error('Nie mozna zaladowac produktow:', e);
+        }
+    }
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const product = {
+            name: form.name.value.trim(),
+            description: form.description.value.trim(),
+            price: parseFloat(form.price.value),
+            stockQuantity: parseInt(form.stockQuantity.value, 10)
+        };
+
+        try {
+            const res = await fetch('/shop-backend/api/products', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(product)
+            });
+
+            if (!res.ok) throw new Error('Blad przy dodawaniu produktu');
+
+            form.reset();
+            loadProducts();
+        } catch (e) {
+            alert('Kurwa, cos poszlo nie tak: ' + e.message);
+        }
+    });
+
+    // Załaduj produkty na start
+    loadProducts();
+</script>
+
+</body>
+</html>

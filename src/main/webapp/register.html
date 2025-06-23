@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Register</title>
+</head>
+<body>
+<h2>Register</h2>
+<form id="registerForm">
+    <input type="text" id="username" placeholder="Username" required /><br />
+    <input type="password" id="password" placeholder="Password" required /><br />
+    <button type="submit">Register</button>
+</form>
+<p id="message"></p>
+
+<script>
+    const form = document.getElementById('registerForm');
+    const msg = document.getElementById('message');
+
+    form.addEventListener('submit', async e => {
+        e.preventDefault();
+
+        const username = document.getElementById('username').value.trim();
+        const password = document.getElementById('password').value;
+
+        try {
+            const res = await fetch('/shop-backend/api/users/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password }),
+            });
+
+            if (res.ok) {
+                msg.textContent = 'Registration successful, you can now login.';
+                form.reset();
+            } else {
+                const data = await res.json();
+                msg.textContent = 'Error: ' + (data.message || 'Something went wrong');
+            }
+        } catch (err) {
+            msg.textContent = 'Network error, try again later.';
+        }
+    });
+</script>
+</body>
+</html>

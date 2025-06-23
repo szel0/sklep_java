@@ -1,31 +1,34 @@
 package com.sklep.controller;
 
 import com.sklep.model.Product;
-import org.springframework.web.bind.annotation.*;
+import com.sklep.service.ProductService;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.MediaType;
 
-import java.util.*;
+import java.util.Collection;
 
-@RestController
-@RequestMapping("/api/products")
+@Path("/products")
+@Produces(MediaType.APPLICATION_JSON)
+@Consumes(MediaType.APPLICATION_JSON)
 public class ProductController {
 
-    private final Map<Long, Product> produkty = new HashMap<>();
-    private long currentId = 1;
+    @Inject
+    private ProductService productService;
 
-    @GetMapping
+    @GET
     public Collection<Product> getAll() {
-        return produkty.values();
+        return productService.getAllProducts();
     }
 
-    @PostMapping
-    public Product add(@RequestBody Product produkt) {
-        produkt.setId(currentId++);
-        produkty.put(produkt.getId(), produkt);
-        return produkt;
+    @POST
+    public Product add(Product product) {
+        return productService.addProduct(product);
     }
 
-    @DeleteMapping("/{id}")
-    public void delete(@PathVariable Long id) {
-        produkty.remove(id);
+    @DELETE
+    @Path("/{id}")
+    public void delete(@PathParam("id") Long id) {
+        productService.deleteProduct(id);
     }
 }
