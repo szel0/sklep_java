@@ -7,4 +7,6 @@ public interface ProductService {
     Collection<Product> getAllProducts();
     Product addProduct(Product product);
     void deleteProduct(Long id);
+    Product getProduct(Long id);
+    Product updateProduct(Product product);
 }

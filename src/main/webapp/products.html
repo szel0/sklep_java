@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Produkty</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        #usernameDisplay { font-weight: bold; margin-bottom: 20px; }
+        ul { list-style-type: none; padding: 0; }
+        li { margin-bottom: 20px; border-bottom: 1px solid #ccc; padding-bottom: 10px; }
+        input[type="number"] { width: 60px; margin-right: 10px; }
+        button { padding: 5px 10px; }
+        .error { color: red; font-size: 0.9em; margin-top: 5px; }
+    </style>
+</head>
+<body>
+
+<div id="usernameDisplay"></div>
+
+<h1>Lista produktów</h1>
+<ul id="productListCart"></ul>
+
+<script>
+    const userId = localStorage.getItem('loggedUserId');
+    const usernameDisplay = document.getElementById('usernameDisplay');
+    const productListCart = document.getElementById('productListCart');
+
+    if (!userId) {
+        alert('Nie jesteś zalogowany!');
+        window.location.href = 'login.html';
+    }
+
+    // Pokaż usera na górze
+    async function loadUser() {
+        try {
+            const res = await fetch(`/shop-backend/api/users/${userId}`);
+            if (!res.ok) throw new Error('Nie można pobrać użytkownika');
+            const user = await res.json();
+            usernameDisplay.textContent = `Zalogowany jako: ${user.username}`;
+        } catch (e) {
+            console.error(e);
+            usernameDisplay.textContent = 'Nie można pobrać danych użytkownika';
+        }
+    }
+
+    async function loadProducts() {
+        productListCart.innerHTML = '';
+        try {
+            const res = await fetch('/shop-backend/api/products');
+            const products = await res.json();
+            products.forEach(p => {
+                if (p.stockQuantity > 0) {
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <div><strong>${p.name}</strong> - ${p.description}</div>
+                        <div>Cena: ${p.price.toFixed(2)} zł</div>
+                        <div>Magazyn: ${p.stockQuantity}</div>
+                        <input type="number" min="1" max="${p.stockQuantity}" placeholder="Ilość" id="qty-${p.id}" />
+                        <button data-productid="${p.id}">Dodaj do koszyka</button>
+                        <div class="error" id="error-${p.id}"></div>
+                    `;
+                    productListCart.appendChild(li);
+                }
+            });
+
+            // Dodaj eventy do buttonów
+            productListCart.querySelectorAll('button').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const pid = btn.getAttribute('data-productid');
+                    const qtyInput = document.getElementById(`qty-${pid}`);
+                    const errorDiv = document.getElementById(`error-${pid}`);
+                    errorDiv.textContent = '';
+
+                    const qty = parseInt(qtyInput.value, 10);
+                    if (isNaN(qty) || qty < 1) {
+                        errorDiv.textContent = 'Podaj poprawną ilość!';
+                        return;
+                    }
+
+                    const stock = parseInt(qtyInput.getAttribute('max'), 10);
+                    if (qty > stock) {
+                        errorDiv.textContent = `Nie możesz dodać więcej niż ${stock} sztuk!`;
+                        return;
+                    }
+
+                    try {
+                        const res = await fetch(`/shop-backend/api/cart/${userId}/add`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ productId: Number(pid), quantity: qty })
+                        });
+                        if (!res.ok) {
+                            const data = await res.json();
+                            errorDiv.textContent = data.message || 'Błąd podczas dodawania do koszyka.';
+                            return;
+                        }
+                        alert('Dodano do koszyka!');
+                        loadProducts();
+                        qtyInput.value = '';
+                    } catch (e) {
+                        errorDiv.textContent = 'Błąd sieci, spróbuj później.';
+                    }
+                });
+            });
+        } catch (e) {
+            productListCart.innerHTML = 'Nie udało się załadować produktów.';
+            console.error(e);
+        }
+    }
+
+    loadUser();
+    loadProducts();
+</script>
+
+</body>
+</html>

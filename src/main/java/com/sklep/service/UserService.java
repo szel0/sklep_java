@@ -8,5 +8,5 @@ public interface UserService {
     User register(User user) throws IllegalArgumentException;
     User login(String username, String password) throws IllegalArgumentException;
     Collection<User> getAllUsers();
-
+    User getUserById(Long id);
 }

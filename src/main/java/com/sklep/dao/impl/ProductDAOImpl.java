@@ -30,4 +30,16 @@ public class ProductDAOImpl implements ProductDAO {
     public void delete(Long id) {
         produkty.remove(id);
     }
+
+    @Override
+    public Product getById(Long id) {
+        return produkty.get(id);
+    }
+
+    @Override
+    public void update(Product product) {
+        if (produkty.containsKey(product.getId())) {
+            produkty.put(product.getId(), product);
+        }
+    }
 }

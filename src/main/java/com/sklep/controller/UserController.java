@@ -41,4 +41,17 @@ public class UserController {
     public Response getAllUsers() {
         return Response.ok(userService.getAllUsers()).build();
     }
+
+    @GET
+    @Path("/{id}")
+    public Response getUserById(@PathParam("id") Long id) {
+        try {
+            User user = userService.getUserById(id);
+            return Response.ok(user).build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.NOT_FOUND)
+                    .entity(new ErrorMessage("User not found"))
+                    .build();
+        }
+    }
 }

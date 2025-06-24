@@ -24,6 +24,7 @@ public class UserServiceImpl implements UserService {
         if (userDao.findByUsername(user.getUsername()).isPresent()) {
             throw new IllegalArgumentException("Username already taken");
         }
+        user.setRole(User.UserRole.USER);
         return userDao.add(user);
     }
 
@@ -43,5 +44,10 @@ public class UserServiceImpl implements UserService {
     @Override
     public Collection<User> getAllUsers() {
         return userDao.findAll();
+    }
+
+    @Override
+    public User getUserById(Long id) {
+        return userDao.findById(id);
     }
 }

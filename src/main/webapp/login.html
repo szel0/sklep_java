@@ -31,8 +31,10 @@
             });
 
             if (res.ok) {
+                const user = await res.json();
                 msg.textContent = 'Login successful!';
-                window.location.href = 'product.html';
+                localStorage.setItem('loggedUserId', user.id);
+                window.location.href = 'products.html';
             } else {
                 const data = await res.json();
                 msg.textContent = 'Error: ' + (data.message || 'Wrong credentials');

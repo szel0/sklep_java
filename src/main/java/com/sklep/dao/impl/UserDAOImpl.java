@@ -15,6 +15,15 @@ public class UserDAOImpl implements UserDAO {
     private final Map<Long, User> users = new HashMap<>();
     private long currentId = 1;
 
+    public UserDAOImpl() {
+        User admin = new User();
+        admin.setUsername("admin");
+        admin.setPassword("admin");
+        admin.setRole(User.UserRole.ADMIN);
+        admin.setId(currentId++);
+        users.put(admin.getId(), admin);
+    }
+
     @Override
     public Optional<User> findByUsername(String username) {
         return users.values().stream()
@@ -32,5 +41,10 @@ public class UserDAOImpl implements UserDAO {
     @Override
     public Collection<User> findAll() {
         return users.values();
+    }
+
+    @Override
+    public User findById(Long id) {
+        return users.get(id);
     }
 }

@@ -36,12 +36,21 @@
             const res = await fetch('/shop-backend/api/products');
             const products = await res.json();
             products.forEach(p => {
-                const li = document.createElement('li');
-                li.textContent = `${p.name} - ${p.description} - Cena: ${p.price.toFixed(2)} - Magazyn: ${p.stockQuantity}`;
-                productList.appendChild(li);
+                if ((p.stockQuantity || 0) > 0) {
+                    const li = document.createElement('li');
+
+                    const name = p.name || 'Brak nazwy';
+                    const description = p.description || 'Brak opisu';
+                    const price = (p.price || 0).toFixed(2);
+                    const stockQuantity = p.stockQuantity || 0;
+
+                    li.textContent = `${name} - ${description} - Cena: ${price} - Magazyn: ${stockQuantity}`;
+                    productList.appendChild(li);
+                }
             });
         } catch (e) {
             console.error('Nie mozna zaladowac produktow:', e);
+            productList.innerHTML = '<li>Błąd ładowania produktów</li>';
         }
     }
 
@@ -67,7 +76,7 @@
             form.reset();
             loadProducts();
         } catch (e) {
-            alert('Kurwa, cos poszlo nie tak: ' + e.message);
+            alert('Cos poszlo nie tak: ' + e.message);
         }
     });
 

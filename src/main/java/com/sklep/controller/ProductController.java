@@ -31,4 +31,11 @@ public class ProductController {
     public void delete(@PathParam("id") Long id) {
         productService.deleteProduct(id);
     }
+
+    @PUT
+    @Path("/{id}")
+    public Product update(@PathParam("id") Long id, Product product) {
+        product.setId(id);
+        return productService.updateProduct(product);
+    }
 }

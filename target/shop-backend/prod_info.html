@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Edytuj produkty</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        table { border-collapse: collapse; width: 100%; max-width: 900px; }
+        th, td { border: 1px solid #ccc; padding: 8px; }
+        th { background-color: #eee; }
+        input[type="text"], input[type="number"] {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 5px;
+        }
+        button { padding: 6px 12px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+<h1>Edytuj wszystkie produkty</h1>
+
+<table>
+    <thead>
+    <tr>
+        <th>Nazwa</th>
+        <th>Opis</th>
+        <th>Cena</th>
+        <th>Magazyn</th>
+        <th>Akcje</th>
+    </tr>
+    </thead>
+    <tbody id="productTableBody"></tbody>
+</table>
+
+<script>
+    const tbody = document.getElementById('productTableBody');
+
+    async function loadProducts() {
+        tbody.innerHTML = '';
+        try {
+            const res = await fetch('/shop-backend/api/products');
+            const products = await res.json();
+
+            products.forEach(p => {
+                const tr = document.createElement('tr');
+
+                tr.innerHTML = `
+                    <td><input type="text" value="${p.name || ''}" data-id="${p.id}" data-field="name"></td>
+                    <td><input type="text" value="${p.description || ''}" data-id="${p.id}" data-field="description"></td>
+                    <td><input type="number" step="0.01" min="0" value="${p.price || 0}" data-id="${p.id}" data-field="price"></td>
+                    <td><input type="number" min="0" value="${p.stockQuantity || 0}" data-id="${p.id}" data-field="stockQuantity"></td>
+                    <td><button data-id="${p.id}" class="saveBtn">Zapisz</button></td>
+                `;
+
+                tbody.appendChild(tr);
+            });
+
+            // Dodaj listener do przycisków zapisania
+            document.querySelectorAll('.saveBtn').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const id = btn.getAttribute('data-id');
+
+                    // Znajdź inputy z tym ID
+                    const inputs = tbody.querySelectorAll(`input[data-id="${id}"]`);
+
+                    // Zbuduj obiekt do wysłania
+                    const updatedProduct = {};
+                    inputs.forEach(input => {
+                        const field = input.getAttribute('data-field');
+                        let val = input.value;
+
+                        // Konwersja do właściwego typu
+                        if (field === 'price') val = parseFloat(val);
+                        else if (field === 'stockQuantity') val = parseInt(val, 10);
+
+                        updatedProduct[field] = val;
+                    });
+
+                    try {
+                        const res = await fetch(`/shop-backend/api/products/${id}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(updatedProduct)
+                        });
+
+                        if (!res.ok) throw new Error('Błąd przy aktualizacji');
+
+                        alert('Produkt zaktualizowany!');
+                        loadProducts();
+                    } catch (e) {
+                        alert('Coś poszło nie tak: ' + e.message);
+                    }
+                });
+            });
+
+        } catch (e) {
+            tbody.innerHTML = '<tr><td colspan="5">Błąd ładowania produktów</td></tr>';
+            console.error(e);
+        }
+    }
+
+    loadProducts();
+</script>
+
+</body>
+</html>
