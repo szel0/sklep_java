@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <title>Zamówienia - Panel Admina</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        button { padding: 5px 10px; margin-right: 5px; }
+    </style>
+</head>
+<body>
+
+<h1>Panel zamówień</h1>
+<div id="message"></div>
+<table id="ordersTable">
+    <thead>
+    <tr>
+        <th>ID zamówienia</th>
+        <th>Użytkownik</th>
+        <th>Status</th>
+        <th>Data</th>
+        <th>Akcje</th>
+    </tr>
+    </thead>
+    <tbody></tbody>
+</table>
+
+<script>
+    (async () => {
+        const userId = localStorage.getItem('loggedUserId');
+        if (!userId) {
+            alert('Nie jesteś zalogowany!');
+            window.location.href = 'login.html';
+            return;
+        }
+
+        try {
+            const res = await fetch(`/shop-backend/api/users/${userId}`);
+            if (!res.ok) throw new Error('Nie udało się pobrać użytkownika');
+            const user = await res.json();
+
+            if (user.role !== 'ADMIN') {
+                alert('Brak dostępu. Admin only.');
+                window.location.href = 'products.html';
+                return;
+            }
+
+            // Tu wrzucasz kod z loadOrders() albo inicjalizujesz całą stronę admina
+            loadOrders();
+
+        } catch (err) {
+            console.error('Nie udało się pobrać użytkownika', err);
+            alert('Musisz się zalogować');
+            window.location.href = 'login.html';
+        }
+    })();
+
+    async function loadOrders() {
+        const tbody = document.querySelector('#ordersTable tbody');
+        tbody.innerHTML = '';
+
+        try {
+            // pobierz wszystkie zamówienia (zakładam endpoint /orders/admin lub po prostu /orders dla admina)
+            const res = await fetch(`/shop-backend/api/cart/admin`);
+            if (!res.ok) throw new Error('Błąd przy pobieraniu zamówień');
+            const orders = await res.json();
+
+            // filtruj tylko PROCESSING i CANCELLED
+            const filtered = orders.filter(o => o.status === 'PROCESSING' || o.status === 'CANCELLED');
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5">Brak zamówień do wyświetlenia</td></tr>';
+                return;
+            }
+
+            filtered.forEach(order => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${order.id}</td>
+                    <td>${order.user.username}</td>
+                    <td>${order.status}</td>
+                    <td>${new Date(order.date).toLocaleString()}</td>
+                    <td>
+                        ${order.status === 'PROCESSING' ? `<button class="completeBtn" data-id="${order.id}">Zakończ</button>` : ''}
+                        ${order.status === 'CANCELLED' ? `<button class="deleteBtn" data-id="${order.id}">Usuń</button>` : ''}
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            // obsługa przycisków
+            tbody.querySelectorAll('.completeBtn').forEach(btn => {
+                btn.addEventListener('click', () => updateStatus(btn.getAttribute('data-id'), 'COMPLETED'));
+            });
+            tbody.querySelectorAll('.deleteBtn').forEach(btn => {
+                btn.addEventListener('click', () => deleteOrder(btn.getAttribute('data-id')));
+            });
+
+        } catch (e) {
+            document.getElementById('message').textContent = 'Nie udało się załadować zamówień.';
+            console.error(e);
+        }
+    }
+
+    async function updateStatus(orderId, newStatus) {
+        try {
+            const res = await fetch(`/shop-backend/api/cart/order/${orderId}/status/${newStatus}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: newStatus })
+            });
+            if (!res.ok) throw new Error('Błąd przy aktualizacji statusu');
+            alert('Status zamówienia zaktualizowany');
+            loadOrders();
+        } catch (e) {
+            alert('Nie udało się zaktualizować statusu');
+            console.error(e);
+        }
+    }
+
+    async function deleteOrder(orderId) {
+        if (!confirm('Na pewno chcesz usunąć to zamówienie?')) return;
+        try {
+            const res = await fetch(`/shop-backend/api/cart/order/${orderId}`, {
+                method: 'DELETE'
+            });
+            if (!res.ok) throw new Error('Błąd przy usuwaniu zamówienia');
+            alert('Zamówienie usunięte');
+            loadOrders();
+        } catch (e) {
+            alert('Nie udało się usunąć zamówienia');
+            console.error(e);
+        }
+    }
+</script>
+
+</body>
+</html>

@@ -17,11 +17,22 @@ public class UserDAOImpl implements UserDAO {
 
     public UserDAOImpl() {
         User admin = new User();
+        User user = new User();
+
         admin.setUsername("admin");
+        user.setUsername("user");
+
         admin.setPassword("admin");
+        user.setPassword("user");
+
         admin.setRole(User.UserRole.ADMIN);
+        user.setRole(User.UserRole.USER);
+
         admin.setId(currentId++);
+        user.setId(currentId++);
+
         users.put(admin.getId(), admin);
+        users.put(user.getId(), user);
     }
 
     @Override

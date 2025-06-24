@@ -31,8 +31,8 @@
             });
 
             if (res.ok) {
-                msg.textContent = 'Registration successful, you can now login.';
                 form.reset();
+                window.location.href = 'login.html';
             } else {
                 const data = await res.json();
                 msg.textContent = 'Error: ' + (data.message || 'Something went wrong');

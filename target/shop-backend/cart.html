@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <title>Koszyk</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        #usernameDisplay { font-weight: bold; margin-bottom: 20px; }
+        ul { list-style-type: none; padding: 0; }
+        li { margin-bottom: 20px; border-bottom: 1px solid #ccc; padding-bottom: 10px; }
+        button { padding: 5px 10px; }
+    </style>
+</head>
+<body>
+
+<div id="usernameDisplay"></div>
+
+<h1>Twój koszyk</h1>
+<ul id="cartList"></ul>
+
+<h2>Calkowita cena</h2>
+<p id="totalAmount">0 zł</p>
+
+<button id="submitOrderBtn">Zloz zamowienie</button>
+<button id="cancelOrderBtn">Anuluj zamowienie</button>
+
+<script>
+    const userId = localStorage.getItem('loggedUserId');
+    const usernameDisplay = document.getElementById('usernameDisplay');
+    const cartList = document.getElementById('cartList');
+    const totalAmountEl = document.getElementById('totalAmount');
+
+    if (!userId) {
+        alert('Nie jesteś zalogowany!');
+        window.location.href = 'login.html';
+    }
+
+    async function loadUser() {
+        try {
+            const res = await fetch(`/shop-backend/api/users/${userId}`);
+            const user = await res.json();
+            usernameDisplay.textContent = `Zalogowany jako: ${user.username}`;
+        } catch (e) {
+            console.error(e);
+            usernameDisplay.textContent = 'Nie można pobrać danych użytkownika';
+        }
+    }
+
+    async function loadCart() {
+        cartList.innerHTML = '';
+        try {
+            const res = await fetch(`/shop-backend/api/cart/${userId}`);
+
+            const order = await res.json();
+
+            if (order.status !== 'NEW' || !order.items || order.items.length === 0) {
+                cartList.innerHTML = '<li>Koszyk jest pusty.</li>';
+                return;
+            }
+
+            totalAmountEl.textContent = order.totalAmount.toFixed(2) + ' zł';
+
+            order.items.forEach(item => {
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    <div><strong>${item.product.name}</strong> - ${item.product.description}</div>
+                    <div>Cena: ${item.product.price.toFixed(2)} zł</div>
+                    <div>Ilość: ${item.quantity}</div>
+                `;
+                cartList.appendChild(li);
+            });
+        } catch (e) {
+            cartList.innerHTML = 'Nie udało się załadować koszyka.';
+            console.error(e);
+        }
+    }
+
+    document.getElementById('submitOrderBtn').addEventListener('click', async () => {
+        try {
+            const res = await fetch(`/shop-backend/api/cart/${userId}/submit`, {
+                method: 'PUT'
+            });
+            if (!res.ok) throw new Error('Błąd przy składaniu zamówienia');
+
+            // Po złożeniu zamówienia fetchujemy od razu nowy koszyk, ale tylko totalAmount i status
+            const orderRes = await fetch(`/shop-backend/api/cart/${userId}`);
+            const order = await orderRes.json();
+
+            totalAmountEl.textContent = order.totalAmount.toFixed(2) + ' zł';
+            loadCart();
+            alert('Zamówienie złożone!');
+        } catch (e) {
+            alert('Nie udało się złożyć zamówienia');
+            console.error(e);
+        }
+    });
+
+    document.getElementById('cancelOrderBtn').addEventListener('click', async () => {
+        try {
+            const res = await fetch(`/shop-backend/api/cart/${userId}/cancel`, {
+                method: 'PUT'
+            });
+            if (!res.ok) throw new Error('Błąd przy anulowaniu zamówienia');
+
+            const orderRes = await fetch(`/shop-backend/api/cart/${userId}`);
+            const order = await orderRes.json();
+
+            totalAmountEl.textContent = order.totalAmount.toFixed(2) + ' zł';
+            loadCart();
+            alert('Zamówienie anulowane!');
+        } catch (e) {
+            alert('Nie udało się anulować zamówienia');
+            console.error(e);
+        }
+    });
+
+
+    loadUser();
+    loadCart();
+</script>
+
+</body>
+</html>

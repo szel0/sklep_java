@@ -27,62 +27,92 @@
 <ul id="productList"></ul>
 
 <script>
-    const form = document.getElementById('productForm');
-    const productList = document.getElementById('productList');
-
-    async function loadProducts() {
-        productList.innerHTML = '';
-        try {
-            const res = await fetch('/shop-backend/api/products');
-            const products = await res.json();
-            products.forEach(p => {
-                if ((p.stockQuantity || 0) > 0) {
-                    const li = document.createElement('li');
-
-                    const name = p.name || 'Brak nazwy';
-                    const description = p.description || 'Brak opisu';
-                    const price = (p.price || 0).toFixed(2);
-                    const stockQuantity = p.stockQuantity || 0;
-
-                    li.textContent = `${name} - ${description} - Cena: ${price} - Magazyn: ${stockQuantity}`;
-                    productList.appendChild(li);
-                }
-            });
-        } catch (e) {
-            console.error('Nie mozna zaladowac produktow:', e);
-            productList.innerHTML = '<li>Błąd ładowania produktów</li>';
+    (async () => {
+        const userId = localStorage.getItem('loggedUserId');
+        if (!userId) {
+            alert('Nie jestes zalogowany');
+            window.location.href = 'login.html';
+            return;
         }
+
+        try {
+            const res = await fetch(`/shop-backend/api/users/${userId}`);
+            const user = await res.json();
+
+            if (user.role !== 'ADMIN') {
+                alert('Brak dostepu. Admin only.');
+                window.location.href = 'products.html';
+                return;
+            }
+
+            // Jeśli admin, dopiero wtedy odpal resztę
+            initAdminPage();
+
+        } catch (err) {
+            console.error('Nie udało się pobrać użytkownika', err);
+            window.location.href = 'login.html';
+        }
+    })();
+
+    function initAdminPage() {
+        const form = document.getElementById('productForm');
+        const productList = document.getElementById('productList');
+
+        async function loadProducts() {
+            productList.innerHTML = '';
+            try {
+                const res = await fetch('/shop-backend/api/products');
+                const products = await res.json();
+                products.forEach(p => {
+                    if ((p.stockQuantity || 0) > 0) {
+                        const li = document.createElement('li');
+
+                        const name = p.name || 'Brak nazwy';
+                        const description = p.description || 'Brak opisu';
+                        const price = (p.price || 0).toFixed(2);
+                        const stockQuantity = p.stockQuantity || 0;
+
+                        li.textContent = `${name} - ${description} - Cena: ${price} - Magazyn: ${stockQuantity}`;
+                        productList.appendChild(li);
+                    }
+                });
+            } catch (e) {
+                console.error('Nie mozna zaladowac produktow:', e);
+                productList.innerHTML = '<li>Blad ladowania produktow</li>';
+            }
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const product = {
+                name: form.name.value.trim(),
+                description: form.description.value.trim(),
+                price: parseFloat(form.price.value),
+                stockQuantity: parseInt(form.stockQuantity.value, 10)
+            };
+
+            try {
+                const res = await fetch('/shop-backend/api/products', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(product)
+                });
+
+                if (!res.ok) throw new Error('Blad przy dodawaniu produktu');
+
+                form.reset();
+                loadProducts();
+            } catch (e) {
+                alert('Cos poszlo nie tak: ' + e.message);
+            }
+        });
+
+        // Załaduj produkty na start
+        loadProducts();
     }
-
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-
-        const product = {
-            name: form.name.value.trim(),
-            description: form.description.value.trim(),
-            price: parseFloat(form.price.value),
-            stockQuantity: parseInt(form.stockQuantity.value, 10)
-        };
-
-        try {
-            const res = await fetch('/shop-backend/api/products', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(product)
-            });
-
-            if (!res.ok) throw new Error('Blad przy dodawaniu produktu');
-
-            form.reset();
-            loadProducts();
-        } catch (e) {
-            alert('Cos poszlo nie tak: ' + e.message);
-        }
-    });
-
-    // Załaduj produkty na start
-    loadProducts();
 </script>
+
 
 </body>
 </html>

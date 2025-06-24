@@ -2,6 +2,7 @@ package com.sklep.dao.impl;
 
 import com.sklep.dao.OrderDAO;
 import com.sklep.model.Order;
+import com.sklep.model.Order.OrderStatus;
 import com.sklep.model.User;
 import com.sklep.model.OrderItem;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -29,10 +30,10 @@ public class OrderDAOImpl implements OrderDAO {
     }
 
     @Override
-    public Optional<Order> getCartByUserId(Long userId) {
+    public List<Order> getAllOrdersByUserId(Long userId) {
         return orders.values().stream()
-                .filter(o -> o.getUser().getId() == userId && o.getStatus() == Order.OrderStatus.NEW)
-                .findFirst();
+                .filter(o -> o.getUser().getId() == userId)
+                .toList();
     }
 
     @Override
@@ -47,5 +48,34 @@ public class OrderDAOImpl implements OrderDAO {
         item.setOrder(order);
         order.getItems().add(item);
         order.setTotalAmount(order.getTotalAmount() + item.getUnitPrice() * item.getQuantity());
+    }
+
+    @Override
+    public Optional<Order> findByUserIdAndStatus(Long userId, OrderStatus status) {
+        return orders.values().stream()
+                .filter(o -> o.getUser().getId() == userId && o.getStatus() == status)
+                .findFirst();
+    }
+
+    @Override
+    public void save(Order order) {
+        orders.put(order.getId(), order);
+    }
+
+    @Override
+    public Optional<Order> get(Long orderId) {
+        return Optional.ofNullable(orders.get(orderId));
+    }
+
+    @Override
+    public void remove(Long orderId) {
+        orders.remove(orderId);
+    }
+
+    @Override
+    public List<Order> findByStatuses(List<Order.OrderStatus> statuses) {
+        return orders.values().stream()
+                .filter(o -> statuses.contains(o.getStatus()))
+                .toList();
     }
 }
